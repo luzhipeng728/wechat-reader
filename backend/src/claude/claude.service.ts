@@ -202,7 +202,25 @@ ${request.content}
   }
 ]`;
 
-    return request.customPrompt || defaultPrompt;
+    // 如果有自定义提示词,需要将占位符替换为实际内容
+    if (request.customPrompt) {
+      let customPrompt = request.customPrompt;
+
+      // 替换 {fields} 占位符
+      customPrompt = customPrompt.replace('{fields}', fieldsDesc);
+
+      // 如果提示词中已有 {content} 占位符,直接替换
+      if (customPrompt.includes('{content}')) {
+        customPrompt = customPrompt.replace('{content}', request.content);
+      } else {
+        // 否则,在提示词末尾追加文章内容
+        customPrompt += `\n\n文章内容:\n${request.content}`;
+      }
+
+      return customPrompt;
+    }
+
+    return defaultPrompt;
   }
 
   /**
