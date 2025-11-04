@@ -38,72 +38,72 @@ api.interceptors.response.use(
 
 // 认证API
 export const authAPI = {
-  register: (data: { email: string; password: string; name: string }) =>
+  register: (data: { email: string; password: string; name: string }): Promise<any> =>
     api.post('/auth/register', data),
-  login: (data: { email: string; password: string }) =>
+  login: (data: { email: string; password: string }): Promise<any> =>
     api.post('/auth/login', data),
 };
 
 // 公众号API
 export const accountsAPI = {
-  list: () => api.get('/accounts'),
-  create: (data: { name: string; description?: string }) =>
+  list: (): Promise<any> => api.get('/accounts'),
+  create: (data: { name: string; description?: string }): Promise<any> =>
     api.post('/accounts', data),
-  get: (id: string) => api.get(`/accounts/${id}`),
-  update: (id: string, data: any) => api.put(`/accounts/${id}`, data),
-  delete: (id: string) => api.delete(`/accounts/${id}`),
+  get: (id: string): Promise<any> => api.get(`/accounts/${id}`),
+  update: (id: string, data: any): Promise<any> => api.put(`/accounts/${id}`, data),
+  delete: (id: string): Promise<any> => api.delete(`/accounts/${id}`),
 };
 
 // 文章API
 export const articlesAPI = {
-  list: (params?: { accountId?: string; page?: number; pageSize?: number }) =>
+  list: (params?: { accountId?: string; page?: number; pageSize?: number }): Promise<any> =>
     api.get('/articles', { params }),
-  create: (data: { accountId: string; url: string }) =>
+  create: (data: { accountId: string; url: string }): Promise<any> =>
     api.post('/articles', data),
-  createBatch: (data: { accountId: string; urls: string[] }) =>
+  createBatch: (data: { accountId: string; urls: string[] }): Promise<any> =>
     api.post('/articles/batch', data),
-  get: (id: string) => api.get(`/articles/${id}`),
-  getContent: (id: string) => api.get(`/articles/${id}/content`),
-  delete: (id: string) => api.delete(`/articles/${id}`),
-  batchDelete: (ids: string[]) => api.post('/articles/batch-delete', { ids }),
+  get: (id: string): Promise<any> => api.get(`/articles/${id}`),
+  getContent: (id: string): Promise<any> => api.get(`/articles/${id}/content`),
+  delete: (id: string): Promise<any> => api.delete(`/articles/${id}`),
+  batchDelete: (ids: string[]): Promise<any> => api.post('/articles/batch-delete', { ids }),
 };
 
 // 维度API
 export const dimensionsAPI = {
-  list: (accountId: string) =>
+  list: (accountId: string): Promise<any> =>
     api.get('/dimensions', { params: { accountId } }),
-  create: (data: any) => api.post('/dimensions', data),
+  create: (data: any): Promise<any> => api.post('/dimensions', data),
   createFromImage: (data: {
     accountId: string;
     name: string;
     imageBase64: string;
-  }) => api.post('/dimensions/from-image', data),
-  get: (id: string) => api.get(`/dimensions/${id}`),
-  update: (id: string, data: any) => api.put(`/dimensions/${id}`, data),
-  lock: (id: string) => api.post(`/dimensions/${id}/lock`),
-  unlock: (id: string) => api.post(`/dimensions/${id}/unlock`),
-  addFields: (id: string, fields: any[]) =>
+  }): Promise<any> => api.post('/dimensions/from-image', data),
+  get: (id: string): Promise<any> => api.get(`/dimensions/${id}`),
+  update: (id: string, data: any): Promise<any> => api.put(`/dimensions/${id}`, data),
+  lock: (id: string): Promise<any> => api.post(`/dimensions/${id}/lock`),
+  unlock: (id: string): Promise<any> => api.post(`/dimensions/${id}/unlock`),
+  addFields: (id: string, fields: any[]): Promise<any> =>
     api.post(`/dimensions/${id}/add-fields`, { fields }),
-  aiGenerateField: (id: string, description: string) =>
+  aiGenerateField: (id: string, description: string): Promise<any> =>
     api.post(`/dimensions/${id}/ai-generate-field`, { description }),
-  reorder: (accountId: string, templateIds: string[]) =>
+  reorder: (accountId: string, templateIds: string[]): Promise<any> =>
     api.post(`/dimensions/reorder`, { templateIds }, { params: { accountId } }),
-  delete: (id: string) => api.delete(`/dimensions/${id}`),
+  delete: (id: string): Promise<any> => api.delete(`/dimensions/${id}`),
 };
 
 // 提取API
 export const extractionsAPI = {
-  extractAll: (articleId: string) =>
+  extractAll: (articleId: string): Promise<any> =>
     api.post(`/extractions/articles/${articleId}/extract-all`),
-  extractOne: (articleId: string, templateId: string) =>
+  extractOne: (articleId: string, templateId: string): Promise<any> =>
     api.post(`/extractions/articles/${articleId}/templates/${templateId}`),
-  getByArticle: (articleId: string) =>
+  getByArticle: (articleId: string): Promise<any> =>
     api.get(`/extractions/articles/${articleId}`),
-  getByTemplate: (templateId: string, params?: { page?: number; pageSize?: number }) =>
+  getByTemplate: (templateId: string, params?: { page?: number; pageSize?: number; keyword?: string }): Promise<any> =>
     api.get(`/extractions/templates/${templateId}`, { params }),
-  export: (templateId: string) =>
+  export: (templateId: string): Promise<any> =>
     api.get(`/extractions/templates/${templateId}/export`),
-  delete: (id: string) => api.delete(`/extractions/${id}`),
+  delete: (id: string): Promise<any> => api.delete(`/extractions/${id}`),
 };
 
 export default api;

@@ -30,6 +30,9 @@ interface Article {
     id: string;
     name: string;
   };
+  _count?: {
+    extractionResults: number;
+  };
 }
 
 interface Account {

@@ -171,7 +171,7 @@ export default function DimensionDataPage() {
 
         const csvContent = [
           headers.join(','),
-          ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+          ...rows.map((row: any[]) => row.map((cell: any) => `"${cell}"`).join(','))
         ].join('\n');
 
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -263,7 +263,7 @@ export default function DimensionDataPage() {
           <Space>
             <Button
               icon={<ReloadOutlined />}
-              onClick={loadExtractions}
+              onClick={() => loadExtractions(currentPage, pageSize, searchKeyword)}
               loading={loading}
             >
               刷新
