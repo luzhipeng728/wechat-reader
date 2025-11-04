@@ -238,37 +238,46 @@ export class ExtractionsService {
    * 获取维度模板的所有提取结果(分页+搜索)
    */
   async findByTemplate(templateId: string, userId: string, page = 1, pageSize = 20, keyword?: string) {
-    await this.dimensionsService.findOne(templateId, userId); // 验证权限
+    try {
+      await this.dimensionsService.findOne(templateId, userId); // 验证权限
 
-    // 构建搜索条件
-    const whereCondition: any = { templateId };
+      // 构建搜索条件
+      const whereCondition: any = { templateId };
 
-    // 如果有关键词,搜索 extractedData 中的所有字段
-    let matchedIds: string[] | null = null;
-    if (keyword && keyword.trim()) {
-      const searchKeyword = keyword.trim().toLowerCase();
+      // 如果有关键词,搜索 extractedData 中的所有字段
+      let matchedIds: string[] | null = null;
+      if (keyword && keyword.trim()) {
+        const searchKeyword = keyword.trim().toLowerCase();
+        console.log(`开始搜索关键词: ${keyword}`);
 
-      // 先获取该维度下所有已完成的记录
-      const allRecords = await this.prisma.extractionResult.findMany({
-        where: {
-          templateId,
-          status: 'completed', // 只搜索已完成的记录
-        },
-        select: { id: true, extractedData: true },
-      });
+        // 先获取该维度下所有已完成的记录
+        const allRecords = await this.prisma.extractionResult.findMany({
+          where: {
+            templateId,
+            status: 'completed', // 只搜索已完成的记录
+          },
+          select: { id: true, extractedData: true },
+        });
 
-      // 在内存中过滤匹配关键词的记录
-      matchedIds = allRecords
-        .filter(record => {
-          // 将 extractedData 转为字符串进行搜索
-          const dataStr = JSON.stringify(record.extractedData).toLowerCase();
-          return dataStr.includes(searchKeyword);
-        })
-        .map(record => record.id);
+        console.log(`获取到 ${allRecords.length} 条记录,开始过滤`);
 
-      console.log(`搜索关键词: ${keyword}, 匹配到 ${matchedIds.length} 条记录`);
+        // 在内存中过滤匹配关键词的记录
+        matchedIds = allRecords
+          .filter(record => {
+            try {
+              // 将 extractedData 转为字符串进行搜索
+              const dataStr = JSON.stringify(record.extractedData).toLowerCase();
+              return dataStr.includes(searchKeyword);
+            } catch (err) {
+              console.error(`过滤记录 ${record.id} 时出错:`, err);
+              return false;
+            }
+          })
+          .map(record => record.id);
 
-      if (matchedIds.length === 0) {
+        console.log(`搜索关键词: ${keyword}, 匹配到 ${matchedIds.length} 条记录`);
+
+        if (matchedIds.length === 0) {
         // 没有匹配结果,返回空数据但保留总体统计
         const [completed, failed, allResults] = await Promise.all([
           this.prisma.extractionResult.count({ where: { templateId, status: 'completed' } }),
@@ -325,20 +334,24 @@ export class ExtractionsService {
       }),
     ]);
 
-    const totalTokens = allResults.reduce((sum, r) => sum + (r.tokensUsed || 0), 0);
+      const totalTokens = allResults.reduce((sum, r) => sum + (r.tokensUsed || 0), 0);
 
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      stats: {
+      return {
+        items,
         total,
-        completed,
-        failed,
-        totalTokens,
-      },
-    };
+        page,
+        pageSize,
+        stats: {
+          total,
+          completed,
+          failed,
+          totalTokens,
+        },
+      };
+    } catch (error) {
+      console.error(`获取维度数据失败 (templateId: ${templateId}):`, error);
+      throw error;
+    }
   }
 
   /**
