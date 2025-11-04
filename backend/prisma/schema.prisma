@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id              String             @id @default(uuid())
+  email           String             @unique
+  passwordHash    String             @map("password_hash")
+  name            String
+  avatarUrl       String?            @map("avatar_url")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  // 关联
+  officialAccounts OfficialAccount[]
+
+  @@map("users")
+}
+
+// 公众号表
+model OfficialAccount {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+  name            String
+  description     String?
+  avatarUrl       String?             @map("avatar_url")
+  wechatId        String?             @map("wechat_id")
+  biz             String?
+  reservedFields  Json?               @map("reserved_fields")
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // 关联
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles        Article[]
+  dimensionTemplates DimensionTemplate[]
+
+  @@index([userId])
+  @@index([name])
+  @@map("official_accounts")
+}
+
+// 文章表
+model Article {
+  id                String              @id @default(uuid())
+  accountId         String              @map("account_id")
+  url               String              @unique
+  newsId            String              @map("news_id")
+  title             String
+  authorName        String?             @map("author_name")
+  publishTime       DateTime?           @map("publish_time")
+  rawContent        Json                @map("raw_content")
+  markdownContent   String?             @map("markdown_content")
+  status            String              @default("pending") // pending/extracting/completed/error
+  errorMessage      String?             @map("error_message")
+  extractionCount   Int                 @default(0) @map("extraction_count")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // 关联
+  account           OfficialAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  extractionResults ExtractionResult[]
+
+  @@unique([accountId, newsId])
+  @@index([accountId])
+  @@index([newsId])
+  @@index([status])
+  @@index([publishTime])
+  @@map("articles")
+}
+
+// 维度模板表
+model DimensionTemplate {
+  id              String              @id @default(uuid())
+  accountId       String              @map("account_id")
+  name            String
+  description     String?
+  fields          Json                // [{name, label, type, description, required, example}]
+  promptTemplate  String?             @map("prompt_template")
+  isLocked        Boolean             @default(false) @map("is_locked")
+  modelPreference String              @default("haiku") @map("model_preference")
+  sortOrder       Int                 @default(0) @map("sort_order")
+  isActive        Boolean             @default(true) @map("is_active")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // 关联
+  account         OfficialAccount     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  extractionResults ExtractionResult[]
+
+  @@index([accountId])
+  @@index([isLocked])
+  @@map("dimension_templates")
+}
+
+// 提取结果表
+model ExtractionResult {
+  id              String            @id @default(uuid())
+  articleId       String            @map("article_id")
+  templateId      String            @map("template_id")
+  batchId         String?           @map("batch_id") // 同一批提取的记录共享相同的batchId
+  extractedData   Json              @map("extracted_data") // 单条记录的数据(对象)
+  modelUsed       String            @map("model_used")
+  tokensUsed      Int?              @map("tokens_used")
+  extractionTime  Int?              @map("extraction_time") // 毫秒
+  status          String            @default("success") // success/error/extracting
+  errorMessage    String?           @map("error_message")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  // 关联
+  article         Article           @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  template        DimensionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([templateId])
+  @@index([batchId])
+  @@index([createdAt])
+  @@map("extraction_results")
+}
+
+// 模型配置表
+model ModelConfig {
+  id          String   @id @default(uuid())
+  name        String
+  modelId     String   @map("model_id")
+  description String?
+  baseUrl     String?  @map("base_url")
+  apiKey      String   @map("api_key")
+  maxTokens   Int      @default(4096) @map("max_tokens")
+  temperature Decimal  @default(0.0) @db.Decimal(3, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("model_configs")
+}
