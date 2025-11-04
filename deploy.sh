@@ -4,6 +4,42 @@
 
 set -e  # 遇到错误立即退出
 
+# 解析命令行参数
+SKIP_DEPS=false
+SKIP_MIGRATE=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --skip-deps)
+      SKIP_DEPS=true
+      shift
+      ;;
+    --skip-migrate)
+      SKIP_MIGRATE=true
+      shift
+      ;;
+    --help)
+      echo "用法: ./deploy.sh [选项]"
+      echo ""
+      echo "选项:"
+      echo "  --skip-deps      跳过依赖安装(适用于依赖已安装的情况)"
+      echo "  --skip-migrate   跳过数据库迁移(适用于数据库架构无变更的情况)"
+      echo "  --help           显示此帮助信息"
+      echo ""
+      echo "示例:"
+      echo "  ./deploy.sh                    # 完整部署"
+      echo "  ./deploy.sh --skip-deps        # 跳过依赖安装"
+      echo "  ./deploy.sh --skip-deps --skip-migrate  # 只编译和重启"
+      exit 0
+      ;;
+    *)
+      echo "❌ 未知选项: $1"
+      echo "运行 ./deploy.sh --help 查看帮助"
+      exit 1
+      ;;
+  esac
+done
+
 echo "========================================="
 echo "  WeChat Spark 生产环境部署脚本"
 echo "========================================="
@@ -24,23 +60,29 @@ if [ ! -f "backend/.env" ]; then
     exit 1
 fi
 
-echo "📦 1. 安装依赖..."
-echo "-----------------------------------"
+# 依赖安装
+if [ "$SKIP_DEPS" = true ]; then
+    echo "⏭️  跳过依赖安装"
+    echo ""
+else
+    echo "📦 1. 安装依赖..."
+    echo "-----------------------------------"
 
-# 后端依赖
-echo "安装后端依赖..."
-cd backend
-npm ci  # 使用 ci 而不是 install,更快且确定性更强
-cd ..
+    # 后端依赖
+    echo "安装后端依赖..."
+    cd backend
+    npm ci  # 使用 ci 而不是 install,更快且确定性更强
+    cd ..
 
-# 前端依赖
-echo "安装前端依赖..."
-cd frontend
-npm ci
-cd ..
+    # 前端依赖
+    echo "安装前端依赖..."
+    cd frontend
+    npm ci
+    cd ..
 
-echo "✅ 依赖安装完成"
-echo ""
+    echo "✅ 依赖安装完成"
+    echo ""
+fi
 
 echo "🔧 2. 编译后端..."
 echo "-----------------------------------"
@@ -58,13 +100,19 @@ cd ..
 echo "✅ 前端编译完成"
 echo ""
 
-echo "🗄️  4. 运行数据库迁移..."
-echo "-----------------------------------"
-cd backend
-npx prisma migrate deploy
-cd ..
-echo "✅ 数据库迁移完成"
-echo ""
+# 数据库迁移
+if [ "$SKIP_MIGRATE" = true ]; then
+    echo "⏭️  跳过数据库迁移"
+    echo ""
+else
+    echo "🗄️  4. 运行数据库迁移..."
+    echo "-----------------------------------"
+    cd backend
+    npx prisma migrate deploy
+    cd ..
+    echo "✅ 数据库迁移完成"
+    echo ""
+fi
 
 echo "🚀 5. 启动服务..."
 echo "-----------------------------------"
